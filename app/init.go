@@ -19,6 +19,9 @@ var (
 
 	// BuildTime revel app build-time (ldflags)
 	BuildTime string
+
+	// database
+	db *gorm.DB
 )
 
 func init() {
@@ -46,9 +49,6 @@ func init() {
 	// revel.OnAppStart(InitDB)
 	// revel.OnAppStart(FillCache)
 	revel.OnAppStart(InitDB)
-	revel.OnAppStart(func() {
-		jobs.Schedule("@every 5m", Tracker{})
-	})
 }
 
 // HeaderFilter adds common security headers
@@ -74,6 +74,7 @@ func InitDB() {
 	defer db.Close()
 
 	db.AutoMigrate(&models.User{}, &models.Beatmap{}, &models.RawScore{})
+	jobs.Schedule("@every 1m", Tracker{db: db})
 }
 
 //func ExampleStartupScript() {
