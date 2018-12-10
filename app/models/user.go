@@ -4,5 +4,5 @@ import "github.com/jinzhu/gorm"
 
 type User struct {
 	gorm.Model
-	OsuID int64
+	OsuID int
 }

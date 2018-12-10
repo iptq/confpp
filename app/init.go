@@ -2,11 +2,13 @@ package app
 
 import (
 	"confpp/app/models"
+	"fmt"
 	"log"
 
 	"github.com/jinzhu/gorm"
 	"github.com/revel/modules/jobs/app/jobs"
 	"github.com/revel/revel"
+	osuapi "github.com/thehowl/go-osuapi"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -49,6 +51,7 @@ func init() {
 	// revel.OnAppStart(InitDB)
 	// revel.OnAppStart(FillCache)
 	revel.OnAppStart(InitDB)
+	revel.OnAppStop(func() { db.Close() })
 }
 
 // HeaderFilter adds common security headers
@@ -64,6 +67,10 @@ var HeaderFilter = func(c *revel.Controller, fc []revel.Filter) {
 }
 
 func InitDB() {
+	key := revel.Config.StringDefault("osu.apikey", "")
+	api := osuapi.NewClient(key)
+	fmt.Println("api test:", api.Test())
+
 	driver := revel.Config.StringDefault("db.driver", "mysql")
 	dsn := revel.Config.StringDefault("db.dsn", "")
 
@@ -71,10 +78,10 @@ func InitDB() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
 	db.AutoMigrate(&models.User{}, &models.Beatmap{}, &models.RawScore{})
-	jobs.Schedule("@every 1m", Tracker{db: db})
+	jobs.Now(Tracker{api, db})
+	jobs.Schedule("@every 5m", Tracker{api, db})
 }
 
 //func ExampleStartupScript() {
